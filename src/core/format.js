@@ -10,7 +10,8 @@ d3.format = function(specifier) {
       type = match[9],
       scale = 1,
       suffix = "",
-      integer = false;
+      integer = false,
+      humanize = false;
 
   if (precision) precision = +precision.substring(1);
 
@@ -25,6 +26,7 @@ d3.format = function(specifier) {
     case "p": scale = 100; suffix = "%"; type = "r"; break;
     case "d": integer = true; precision = 0; break;
     case "s": scale = -1; type = "r"; break;
+    case "h": humanize = true; break;
   }
 
   // If no precision is specified for r, fallback to general notation.
@@ -33,6 +35,7 @@ d3.format = function(specifier) {
   type = d3_format_types.get(type) || d3_format_typeDefault;
 
   return function(value) {
+    if (humanize) return humanize_it(value);
 
     // Return the empty string for floats formatted as ints.
     if (integer && (value % 1)) return "";
@@ -43,7 +46,7 @@ d3.format = function(specifier) {
     // Apply the scale, computing it from the value's exponent for si format.
     if (scale < 0) {
       var prefix = d3.formatPrefix(value, precision);
-      value = prefix.scale(value);
+      value *= prefix.scale;
       suffix = prefix.symbol;
     } else {
       value *= scale;
@@ -97,4 +100,18 @@ function d3_format_group(value) {
       t = [];
   while (i > 0) t.push(value.substring(i -= 3, i + 3));
   return t.reverse().join(",") + f;
+}
+
+// Make an integer more human readable
+// TODO: deal with reals
+function humanize_it(value) {
+  var a_nums = ("" + value).split(""),
+      n_string = "", // formated "new" string
+      n_chrs   = 1;
+  for (var i=a_nums.length-1; i >= 0; i--, n_chrs++) {
+    n_string = a_nums[i] + n_string;
+    if (n_chrs % 3 === 0 && i !== 0)
+      n_string = '_' + n_string;
+  }
+  return n_string;
 }
